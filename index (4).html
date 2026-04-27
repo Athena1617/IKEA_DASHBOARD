@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IKEA India — Conversion Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --ink: #0D0D0D;
+  --ink2: #4A4A4A;
+  --ink3: #8A8A8A;
+  --paper: #F7F5F0;
+  --paper2: #EDEBE4;
+  --paper3: #E2DFD6;
+  --blue: #0058A3;
+  --blue-mid: #2272C3;
+  --blue-pale: #D6E8F8;
+  --yellow: #FFDA1A;
+  --navy: #042C53;
+  --green: #1A7F4B;
+  --green-bg: #EAF7EF;
+  --red: #C0392B;
+  --red-bg: #FDF0EE;
+  --amber: #B45309;
+  --amber-bg: #FEF8EC;
+  --border: rgba(0,0,0,0.09);
+  --border-strong: rgba(0,0,0,0.18);
+  --r: 10px;
+  --r-sm: 6px;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --body: 'DM Sans', sans-serif;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: var(--body);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ─── LAYOUT ─── */
+.app { display: grid; grid-template-rows: 52px 1fr; height: 100vh; }
+.main { display: grid; grid-template-columns: 220px 1fr; overflow: hidden; }
+.sidebar { background: var(--navy); display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid rgba(255,255,255,0.06); }
+.content { overflow-y: auto; background: var(--paper); }
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-thumb { background: var(--paper3); border-radius: 2px; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  background: var(--navy);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: relative; z-index: 10;
+}
+.topbar-left { display: flex; align-items: center; gap: 14px; }
+.logo-mark {
+  background: var(--yellow); color: var(--navy);
+  font-family: var(--display); font-weight: 800; font-size: 12px;
+  letter-spacing: 0.06em; padding: 5px 9px; border-radius: 5px;
+}
+.topbar-title { font-family: var(--display); font-size: 14px; font-weight: 600; color: #fff; letter-spacing: -0.02em; }
+.topbar-sub { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; letter-spacing: 0.04em; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.live-indicator { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22C55E; animation: blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 60%{opacity:0.3} }
+.live-text { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,0.6); }
+.store-pill {
+  font-family: var(--mono); font-size: 11px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 6px; cursor: pointer; outline: none;
+}
+.store-pill option { background: var(--navy); }
+.refresh-pill {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5); padding: 5px 11px; border-radius: 6px; cursor: pointer;
+  transition: all 0.15s;
+}
+.refresh-pill:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* ─── HEALTH SCORE (SIDEBAR TOP) ─── */
+.sidebar-health {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.sh-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 8px; }
+.sh-score-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+.sh-score { font-family: var(--display); font-size: 48px; font-weight: 800; color: #fff; line-height: 1; }
+.sh-denom { font-family: var(--mono); font-size: 14px; color: rgba(255,255,255,0.3); }
+.sh-track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-bottom: 8px; overflow: hidden; }
+.sh-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+.sh-delta { font-family: var(--mono); font-size: 10px; }
+.sh-name { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+/* ─── SIDEBAR NAV ─── */
+.sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+.sidebar-nav::-webkit-scrollbar { display: none; }
+.nav-section-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; color: rgba(255,255,255,0.25); text-transform: uppercase; padding: 4px 8px 8px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 7px; cursor: pointer;
+  transition: all 0.15s; margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.07); }
+.nav-item.active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.08); }
+.nav-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.nav-text { flex: 1; }
+.nav-title { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.85); line-height: 1.2; }
+.nav-sub { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 1px; }
+.nav-badge {
+  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  padding: 2px 6px; border-radius: 10px; flex-shrink: 0;
+}
+.nb-red { background: rgba(192,57,43,0.4); color: #FCA5A5; border: 1px solid rgba(192,57,43,0.3); }
+.nb-amber { background: rgba(180,83,9,0.35); color: #FDE68A; border: 1px solid rgba(180,83,9,0.3); }
+.nb-green { background: rgba(26,127,75,0.35); color: #86EFAC; border: 1px solid rgba(26,127,75,0.3); }
+
+/* ─── SIDEBAR ALERTS SUMMARY ─── */
+.sidebar-alerts { padding: 12px 18px 16px; border-top: 1px solid rgba(255,255,255,0.07); }
+.sa-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; color: rgba(255,255,255,0.25); text-transform: uppercase; margin-bottom: 8px; }
+.sa-item { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+.sa-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sa-text { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.3; }
+.sa-time { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.25); }
+
+/* ─── PANELS ─── */
+.panel { display: none; padding: 24px 28px; animation: fadeUp 0.2s ease; }
+.panel.active { display: block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* ─── PANEL HEADER ─── */
+.ph { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; gap: 16px; }
+.ph-left { flex: 1; }
+.ph-eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; color: var(--blue); text-transform: uppercase; margin-bottom: 5px; }
+.ph-title { font-family: var(--display); font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: -0.03em; line-height: 1.1; }
+.ph-desc { font-size: 12px; color: var(--ink3); margin-top: 5px; line-height: 1.5; max-width: 520px; }
+.ph-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* ─── STATUS PILL ─── */
+.status { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 4px 11px; border-radius: 20px; letter-spacing: 0.02em; }
+.s-red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+.s-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(180,83,9,0.2); }
+.s-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(26,127,75,0.2); }
+.s-blue { background: var(--blue-pale); color: var(--blue); border: 1px solid rgba(0,88,163,0.2); }
+
+/* ─── KPI ROW ─── */
+.kpi-row { display: flex; gap: 10px; margin-bottom: 20px; }
+.kpi-tile {
+  flex: 1; background: #fff; border: 1px solid var(--border); border-radius: var(--r);
+  padding: 14px 16px; position: relative; overflow: hidden;
+  box-shadow: var(--shadow); transition: box-shadow 0.2s;
+}
+.kpi-tile:hover { box-shadow: var(--shadow-lg); }
+.kpi-tile::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--tile-color, var(--blue));
+}
+.kpi-tile-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: var(--ink3); text-transform: uppercase; margin-bottom: 6px; }
+.kpi-tile-val { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1; margin-bottom: 4px; letter-spacing: -0.03em; }
+.kpi-tile-meta { font-family: var(--mono); font-size: 10px; }
+.up { color: var(--green); }
+.dn { color: var(--red); }
+.nu { color: var(--ink3); }
+
+/* ─── GRID LAYOUTS ─── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.g32 { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
+.g23 { display: grid; grid-template-columns: 2fr 3fr; gap: 14px; }
+.full { grid-column: 1/-1; }
+.mt { margin-top: 14px; }
+
+/* ─── CARD ─── */
+.card {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--r);
+  padding: 18px 20px; box-shadow: var(--shadow);
+}
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.card-title { font-family: var(--display); font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+.card-sub { font-family: var(--mono); font-size: 9px; color: var(--ink3); margin-top: 3px; letter-spacing: 0.04em; }
+.card-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* ─── CHART ─── */
+.chart-box { position: relative; }
+.chart-box canvas { display: block; }
+
+/* ─── TRIGGER BOX ─── */
+.trigger {
+  margin-top: 14px; padding: 12px 14px; border-radius: var(--r-sm);
+  border-left: 3px solid var(--trigger-color, var(--blue));
+  background: var(--trigger-bg, var(--blue-pale));
+}
+.trigger-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--trigger-color, var(--blue)); margin-bottom: 4px; }
+.trigger-text { font-size: 12px; color: var(--ink2); line-height: 1.55; }
+.trigger-action {
+  margin-top: 10px; display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  background: var(--trigger-color, var(--blue)); color: #fff;
+  padding: 6px 12px; border-radius: 5px; cursor: pointer; border: none;
+  transition: opacity 0.15s;
+}
+.trigger-action:hover { opacity: 0.85; }
+
+/* ─── INLINE TABLE ─── */
+.itable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.itable th { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); padding: 0 10px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+.itable th:not(:first-child) { text-align: right; }
+.itable td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.itable tr:last-child td { border-bottom: none; }
+.itable td:not(:first-child) { font-family: var(--mono); font-size: 11px; text-align: right; }
+.itable .hl { background: rgba(0,88,163,0.04); font-weight: 600; }
+
+/* ─── BAR ROWS ─── */
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bar-row:last-child { margin-bottom: 0; }
+.bar-name { font-size: 12px; color: var(--ink2); width: 110px; flex-shrink: 0; line-height: 1.2; }
+.bar-track { flex: 1; height: 10px; background: var(--paper2); border-radius: 5px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 5px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.bar-target-line { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(0,0,0,0.3); border-radius: 1px; }
+.bar-val { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--ink); width: 34px; text-align: right; flex-shrink: 0; }
+.bar-delta { font-family: var(--mono); font-size: 10px; width: 36px; text-align: right; flex-shrink: 0; }
+
+/* ─── HEATMAP ─── */
+.hmap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.hmap-cell {
+  border-radius: 7px; padding: 8px 5px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  font-family: var(--mono); position: relative;
+}
+.hmap-cell:hover { transform: scale(1.06); box-shadow: var(--shadow-lg); z-index: 2; }
+.hmap-val { font-size: 12px; font-weight: 600; }
+.hmap-name { font-size: 8px; text-align: center; line-height: 1.25; margin-top: 3px; opacity: 0.8; }
+.hmap-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.hmap-swatch { width: 14px; height: 8px; border-radius: 2px; }
+
+/* ─── FUNNEL ─── */
+.funnel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.funnel-row:last-child { margin-bottom: 0; }
+.funnel-tier { font-size: 12px; color: var(--ink2); width: 72px; flex-shrink: 0; }
+.funnel-track { flex: 1; height: 28px; background: var(--paper2); border-radius: 6px; overflow: hidden; }
+.funnel-fill {
+  height: 100%; border-radius: 6px;
+  display: flex; align-items: center; padding: 0 10px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.9);
+  transition: width 0.7s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap; overflow: hidden;
+}
+.funnel-count { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--ink); width: 44px; text-align: right; flex-shrink: 0; }
+.funnel-pct { font-family: var(--mono); font-size: 10px; color: var(--ink3); width: 32px; text-align: right; flex-shrink: 0; }
+
+/* ─── PIPELINE ─── */
+.pipe-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.pipe-row:last-child { border-bottom: none; }
+.pipe-stage-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.pipe-stage-name { flex: 1; font-size: 12px; color: var(--ink); font-weight: 500; }
+.pipe-count-chip { font-family: var(--mono); font-size: 10px; background: var(--paper2); padding: 2px 7px; border-radius: 10px; color: var(--ink2); }
+.pipe-value { font-family: var(--display); font-size: 15px; font-weight: 700; color: var(--ink); width: 54px; text-align: right; flex-shrink: 0; }
+.pipe-mini-bar { width: 80px; height: 5px; border-radius: 3px; }
+
+/* ─── AB TEST ─── */
+.ab-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.ab-card { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 14px; position: relative; overflow: hidden; }
+.ab-card.winner { border-color: rgba(26,127,75,0.4); background: var(--green-bg); }
+.ab-winner-tag { position: absolute; top: 0; right: 0; background: var(--green); color: #fff; font-family: var(--mono); font-size: 8px; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 0 6px 0 6px; }
+.ab-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: var(--ink3); text-transform: uppercase; margin-bottom: 6px; }
+.ab-rate { font-family: var(--display); font-size: 32px; font-weight: 800; color: var(--ink); letter-spacing: -0.04em; line-height: 1; }
+.ab-desc { font-size: 11px; color: var(--ink2); margin-top: 6px; line-height: 1.5; }
+.ab-lift { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--green); margin-top: 6px; }
+
+/* ─── ALERT ROWS ─── */
+.alert-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 13px; border-radius: var(--r-sm); margin-bottom: 7px;
+  border: 1px solid transparent;
+}
+.alert-row:last-child { margin-bottom: 0; }
+.ar-red { background: var(--red-bg); border-color: rgba(192,57,43,0.15); }
+.ar-amber { background: var(--amber-bg); border-color: rgba(180,83,9,0.15); }
+.ar-blue { background: var(--blue-pale); border-color: rgba(0,88,163,0.12); }
+.ar-green { background: var(--green-bg); border-color: rgba(26,127,75,0.15); }
+.alert-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; font-family: var(--mono); }
+.alert-body { flex: 1; }
+.alert-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.alert-msg { font-size: 11px; color: var(--ink2); line-height: 1.5; }
+.alert-time { font-family: var(--mono); font-size: 9px; color: var(--ink3); white-space: nowrap; }
+
+/* ─── MINI STAT ─── */
+.mini-stats { display: flex; gap: 8px; margin-bottom: 14px; }
+.mini-stat { flex: 1; background: var(--paper2); border-radius: var(--r-sm); padding: 10px 12px; }
+.ms-val { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.03em; }
+.ms-lbl { font-family: var(--mono); font-size: 9px; color: var(--ink3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ─── DIFM BARS ─── */
+.difm-wrap { display: flex; align-items: flex-end; gap: 6px; height: 110px; margin-bottom: 10px; }
+.difm-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.difm-pct-lbl { font-family: var(--mono); font-size: 9px; font-weight: 600; }
+.difm-bar-area { width: 100%; position: relative; display: flex; align-items: flex-end; }
+.difm-bar { border-radius: 4px 4px 0 0; width: 100%; transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+.difm-lbl { font-family: var(--mono); font-size: 8px; color: var(--ink3); text-align: center; line-height: 1.3; }
+
+/* ─── NUDGE CARD ─── */
+.nudge-card { background: var(--blue); border-radius: var(--r); padding: 16px 18px; color: #fff; margin-top: 14px; }
+.nudge-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; color: rgba(255,255,255,0.5); text-transform: uppercase; margin-bottom: 6px; }
+.nudge-stat { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+.nudge-desc { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px; line-height: 1.5; }
+.nudge-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+.nudge-metric { text-align: center; }
+.nudge-metric-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--yellow); }
+.nudge-metric-lbl { font-family: var(--mono); font-size: 8px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+/* ─── SCORE RING ─── */
+.score-ring-wrap { display: flex; align-items: center; justify-content: center; position: relative; }
+.score-ring-label { position: absolute; text-align: center; }
+.score-ring-num { font-family: var(--display); font-weight: 800; color: var(--ink); line-height: 1; }
+.score-ring-sub { font-family: var(--mono); font-size: 9px; color: var(--ink3); margin-top: 2px; }
+
+/* ─── INSIGHT BOX ─── */
+.insight {
+  padding: 11px 14px; border-radius: var(--r-sm);
+  font-size: 11px; line-height: 1.6; color: var(--ink2);
+}
+.insight strong { color: var(--ink); }
+.insight-blue { background: var(--blue-pale); border: 1px solid rgba(0,88,163,0.15); }
+.insight-amber { background: var(--amber-bg); border: 1px solid rgba(180,83,9,0.2); }
+.insight-green { background: var(--green-bg); border: 1px solid rgba(26,127,75,0.18); }
+.insight-red { background: var(--red-bg); border: 1px solid rgba(192,57,43,0.15); }
+
+/* ─── DIVIDER ─── */
+.div-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); margin: 18px 0 10px; display: flex; align-items: center; gap: 8px; }
+.div-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ─── TIME FILTER ─── */
+.time-filter { display: flex; gap: 4px; background: var(--paper2); padding: 3px; border-radius: 7px; }
+.tf-btn { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; padding: 4px 9px; border-radius: 5px; border: none; background: none; color: var(--ink3); cursor: pointer; transition: all 0.15s; }
+.tf-btn.active { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ TOPBAR ═══ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark">IKEA</div>
+      <div>
+        <div class="topbar-title">Conversion Intelligence</div>
+        <div class="topbar-sub" id="liveTime">LIVE · MON 27 APR 2026 · 14:32 IST</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-indicator"><div class="live-dot"></div><div class="live-text">SAP POS · CRM · Beacons</div></div>
+      <select class="store-pill" id="storeSelect" onchange="switchStore()">
+        <option value="hyd">Hyderabad (Blue Box)</option>
+        <option value="mum">Mumbai, Navi (Blue Box)</option>
+        <option value="blr">Bengaluru (Blue Box)</option>
+        <option value="del">Delhi, Dwarka (City)</option>
+      </select>
+      <button class="refresh-pill" onclick="refreshDash()">↻ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <div class="sidebar">
+
+      <!-- Health Score -->
+      <div class="sidebar-health">
+        <div class="sh-label">Conversion health score</div>
+        <div class="sh-score-row">
+          <div class="sh-score" id="sh-score">72</div>
+          <div class="sh-denom">/100</div>
+        </div>
+        <div class="sh-track"><div class="sh-fill" id="sh-fill" style="width:72%;background:#2272C3;"></div></div>
+        <div class="sh-delta up" id="sh-delta">↑ +4 pts vs. yesterday</div>
+        <div class="sh-name" id="sh-name">Hyderabad · Blue Box</div>
+      </div>
+
+      <!-- Nav -->
+      <div class="sidebar-nav">
+        <div class="nav-section-label">6 Intelligence Modules</div>
+
+        <div class="nav-item active" onclick="show('footfall')" id="nav-footfall">
+          <div class="nav-icon" style="background:rgba(192,57,43,0.25);">📡</div>
+          <div class="nav-text">
+            <div class="nav-title">Footfall & Scan Rate</div>
+            <div class="nav-sub">ENTRY SENSORS + ITEM DATA</div>
+          </div>
+          <div class="nav-badge nb-red" id="nbadge-footfall">ALERT</div>
+        </div>
+
+        <div class="nav-item" onclick="show('bnpl')" id="nav-bnpl">
+          <div class="nav-icon" style="background:rgba(26,127,75,0.25);">💳</div>
+          <div class="nav-text">
+            <div class="nav-title">BNPL Acceptance</div>
+            <div class="nav-sub">POS TRANSACTION DATA</div>
+          </div>
+          <div class="nav-badge nb-green" id="nbadge-bnpl">ON TGT</div>
+        </div>
+
+        <div class="nav-item" onclick="show('difm')" id="nav-difm">
+          <div class="nav-icon" style="background:rgba(180,83,9,0.25);">🔧</div>
+          <div class="nav-text">
+            <div class="nav-title">DIFM Attach Rate</div>
+            <div class="nav-sub">IKEA GHAR BOOKING DATA</div>
+          </div>
+          <div class="nav-badge nb-amber" id="nbadge-difm">2 LOW</div>
+        </div>
+
+        <div class="nav-item" onclick="show('dwell')" id="nav-dwell">
+          <div class="nav-icon" style="background:rgba(0,88,163,0.25);">🗺</div>
+          <div class="nav-text">
+            <div class="nav-title">Room Set Dwell</div>
+            <div class="nav-sub">BLUETOOTH BEACON DATA</div>
+          </div>
+          <div class="nav-badge nb-green" id="nbadge-dwell">READY</div>
+        </div>
+
+        <div class="nav-item" onclick="show('loyalty')" id="nav-loyalty">
+          <div class="nav-icon" style="background:rgba(0,88,163,0.25);">⭐</div>
+          <div class="nav-text">
+            <div class="nav-title">Loyalty Migration</div>
+            <div class="nav-sub">IKEA FAMILY CRM DATA</div>
+          </div>
+          <div class="nav-badge nb-green" id="nbadge-loyalty">312 SENT</div>
+        </div>
+
+        <div class="nav-item" onclick="show('b2b')" id="nav-b2b">
+          <div class="nav-icon" style="background:rgba(104,47,160,0.25);">🏢</div>
+          <div class="nav-text">
+            <div class="nav-title">B2B Lead Pipeline</div>
+            <div class="nav-sub">ACCOUNT MGR CRM INPUTS</div>
+          </div>
+          <div class="nav-badge nb-green" id="nbadge-b2b">₹1.99Cr</div>
+        </div>
+      </div>
+
+      <!-- Alerts summary -->
+      <div class="sidebar-alerts">
+        <div class="sa-label">Latest triggers</div>
+        <div class="sa-item"><div class="sa-dot" style="background:#EF4444;"></div><div><div class="sa-text">Food-only spike: 31%</div><div class="sa-time">14:18</div></div></div>
+        <div class="sa-item"><div class="sa-dot" style="background:#F59E0B;"></div><div><div class="sa-text">DIFM: Sofas 22%, Beds 19%</div><div class="sa-time">13:55</div></div></div>
+        <div class="sa-item"><div class="sa-dot" style="background:#22C55E;"></div><div><div class="sa-text">BNPL Variant B: +12% CTR</div><div class="sa-time">13:40</div></div></div>
+        <div class="sa-item"><div class="sa-dot" style="background:#22C55E;"></div><div><div class="sa-text">312 loyalty nudges sent</div><div class="sa-time">14:00</div></div></div>
+      </div>
+    </div><!-- /sidebar -->
+
+    <!-- ═══ CONTENT ═══ -->
+    <div class="content" id="contentArea">
+
+      <!-- ══════════ MODULE 1: FOOTFALL ══════════ -->
+      <div class="panel active" id="panel-footfall">
+        <div class="ph">
+          <div class="ph-left">
+            <div class="ph-eyebrow">Module 01 · Entry Sensors + Item Scanner Data</div>
+            <div class="ph-title">Footfall vs. Furniture<br>Scan Rate</div>
+            <div class="ph-desc">Alert fires when >25% of in-store visitors scan only food items → triggers staff redirect protocol to route visitors toward furniture floor.</div>
+          </div>
+          <div class="ph-right">
+            <span class="status s-red">⚠ ALERT ACTIVE</span>
+            <div class="time-filter">
+              <button class="tf-btn active" onclick="setTimeRange('today',this)">Today</button>
+              <button class="tf-btn" onclick="setTimeRange('week',this)">7D</button>
+              <button class="tf-btn" onclick="setTimeRange('month',this)">30D</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-row">
+          <div class="kpi-tile" style="--tile-color:#2272C3;">
+            <div class="kpi-tile-label">Footfall Today</div>
+            <div class="kpi-tile-val" id="ff-kpi1">3,842</div>
+            <div class="kpi-tile-meta up">↑ +11% vs. daily avg</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#C0392B;">
+            <div class="kpi-tile-label">Furniture Scan Rate</div>
+            <div class="kpi-tile-val" id="ff-kpi2">38%</div>
+            <div class="kpi-tile-meta dn">Target: 55% · −17 pts</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#C0392B;">
+            <div class="kpi-tile-label">Food-Only Visitors</div>
+            <div class="kpi-tile-val" id="ff-kpi3">31%</div>
+            <div class="kpi-tile-meta dn">Threshold: 25% · ALERT</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Peak Hour</div>
+            <div class="kpi-tile-val">12pm</div>
+            <div class="kpi-tile-meta nu">890 visitors · highest scan</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Avg Dwell (Furn.)</div>
+            <div class="kpi-tile-val">62<span style="font-size:14px;font-weight:400;"> min</span></div>
+            <div class="kpi-tile-meta up">↑ +8 min vs. last week</div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <!-- Main chart -->
+          <div class="card full" style="grid-column:1/-1;">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Hourly Footfall vs. Furniture Scan Rate vs. Food-Only %</div>
+                <div class="card-sub">TODAY · 10AM – 4PM · FOOD-ONLY THRESHOLD LINE AT 25%</div>
+              </div>
+              <div class="card-right">
+                <div style="display:flex;gap:14px;align-items:center;">
+                  <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);"><span style="width:10px;height:10px;border-radius:2px;background:#85B7EB;display:inline-block;"></span>Footfall</span>
+                  <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);"><span style="width:14px;height:2px;background:#0058A3;display:inline-block;border-radius:1px;"></span>Scan rate %</span>
+                  <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);"><span style="width:14px;height:2px;background:#C0392B;display:inline-block;border-radius:1px;border-top:2px dashed #C0392B;"></span>Food-only %</span>
+                </div>
+              </div>
+            </div>
+            <div class="chart-box" style="height:200px;"><canvas id="ffChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Hourly breakdown table + protocol -->
+        <div class="g32 mt">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Hourly Breakdown</div>
+                <div class="card-sub">RED = FOOD-ONLY ABOVE 25% THRESHOLD</div>
+              </div>
+            </div>
+            <table class="itable">
+              <thead><tr><th>Hour</th><th>Footfall</th><th>Furn. Scan</th><th>Food-Only</th><th>Status</th></tr></thead>
+              <tbody id="ff-table"></tbody>
+            </table>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Staff Redirect Protocol</div>
+                <div class="card-sub">AUTO-TRIGGERED WHEN FOOD-ONLY > 25%</div>
+              </div>
+              <div class="alert-row ar-red">
+                <div class="alert-icon" style="background:#FCA5A5;color:#991B1B;">!</div>
+                <div class="alert-body">
+                  <div class="alert-title" style="color:#991B1B;">Redirect active since 14:18</div>
+                  <div class="alert-msg">31% of visitors scanning food-only. Protocol: route guests from food court entrance through Living Room Zone B using co-worker intercept.</div>
+                </div>
+              </div>
+              <div class="div-label">Protocol steps</div>
+              <div style="font-size:12px;color:var(--ink2);line-height:1.9;">
+                <div style="display:flex;gap:8px;margin-bottom:6px;"><div style="background:var(--blue);color:#fff;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px;">01</div><div>Assign 2 co-workers to food court entrance. Intercept dining-intent visitors.</div></div>
+                <div style="display:flex;gap:8px;margin-bottom:6px;"><div style="background:var(--blue);color:#fff;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px;">02</div><div>Guide toward Indian Kitchen Set A (highest dwell: 11.2 min avg, 3× conversion lift).</div></div>
+                <div style="display:flex;gap:8px;margin-bottom:6px;"><div style="background:var(--blue);color:#fff;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px;">03</div><div>Floor manager to activate BNPL visibility in scan-low zones (Sofas, Beds).</div></div>
+                <div style="display:flex;gap:8px;"><div style="background:var(--blue);color:#fff;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px;">04</div><div>Re-check food-only % in 30 mins. Auto-clear if below 25% for 2 consecutive readings.</div></div>
+              </div>
+              <div style="margin-top:12px;">
+                <button class="trigger-action" style="--trigger-color:var(--blue);width:100%;justify-content:center;" onclick="sendPrompt('IKEA Hyderabad food-only visitor rate is at 31%. Staff redirect protocol is active. Generate a floor manager briefing for co-workers at the food court entrance — specific zone routing and conversion script.')">Generate floor briefing ↗</button>
+              </div>
+            </div>
+
+            <div class="card mt">
+              <div class="card-head">
+                <div class="card-title">Zone-Level Scan Rate</div>
+                <div class="card-sub">LAST 2 HOURS</div>
+              </div>
+              <div class="bar-row"><div class="bar-name">Indian Kitchen</div><div class="bar-track"><div class="bar-fill" style="width:71%;background:#2272C3;"></div></div><div class="bar-val">71%</div><div class="bar-delta up">↑5%</div></div>
+              <div class="bar-row"><div class="bar-name">Living Room</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:#2272C3;"></div></div><div class="bar-val">55%</div><div class="bar-delta nu">0%</div></div>
+              <div class="bar-row"><div class="bar-name">Storage</div><div class="bar-track"><div class="bar-fill" style="width:43%;background:#85B7EB;"></div></div><div class="bar-val">43%</div><div class="bar-delta up">↑2%</div></div>
+              <div class="bar-row"><div class="bar-name">Kids Room</div><div class="bar-track"><div class="bar-fill" style="width:39%;background:#85B7EB;"></div></div><div class="bar-val">39%</div><div class="bar-delta nu">0%</div></div>
+              <div class="bar-row"><div class="bar-name">Sofa Dept</div><div class="bar-track"><div class="bar-fill" style="width:22%;background:#F59E0B;"></div></div><div class="bar-val">22%</div><div class="bar-delta dn">↓8%</div></div>
+              <div class="bar-row"><div class="bar-name">Bed Dept</div><div class="bar-track"><div class="bar-fill" style="width:18%;background:#EF4444;"></div></div><div class="bar-val">18%</div><div class="bar-delta dn">↓5%</div></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-footfall -->
+
+
+      <!-- ══════════ MODULE 2: BNPL ══════════ -->
+      <div class="panel" id="panel-bnpl">
+        <div class="ph">
+          <div class="ph-left">
+            <div class="ph-eyebrow">Module 02 · POS Transaction Data</div>
+            <div class="ph-title">BNPL Offer<br>Acceptance Rate</div>
+            <div class="ph-desc">Real-time A/B test display of EMI messaging. Auto-optimises offer placement across POS screens and digital touchpoints. Accepts data from Bajaj Finance, HDFC FlexiPay, IDFC First, LazyPay.</div>
+          </div>
+          <div class="ph-right">
+            <span class="status s-green">✓ ON TARGET</span>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Overall BNPL Attach</div>
+            <div class="kpi-tile-val">29%</div>
+            <div class="kpi-tile-meta up">↑ +4 pts vs. last week</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Top Partner Rate</div>
+            <div class="kpi-tile-val">68%</div>
+            <div class="kpi-tile-meta nu">Bajaj Finance · +3% WoW</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#2272C3;">
+            <div class="kpi-tile-label">A/B Winner Lift</div>
+            <div class="kpi-tile-val">+12%</div>
+            <div class="kpi-tile-meta up">Variant B CTR over control</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#2272C3;">
+            <div class="kpi-tile-label">Sessions Tested</div>
+            <div class="kpi-tile-val">2,100</div>
+            <div class="kpi-tile-meta nu">Statistically significant</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#B45309;">
+            <div class="kpi-tile-label">LazyPay Trend</div>
+            <div class="kpi-tile-val">28%</div>
+            <div class="kpi-tile-meta dn">↓ −2% · Watch</div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <!-- Partner bars -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Partner Acceptance Rates</div>
+                <div class="card-sub">REAL-TIME · TODAY · TARGET LINE AT 40%</div>
+              </div>
+            </div>
+            <div style="margin-bottom:16px;">
+              <div class="bar-row">
+                <div class="bar-name" style="width:100px;">Bajaj Finance</div>
+                <div class="bar-track" style="height:14px;position:relative;">
+                  <div class="bar-fill" style="width:68%;background:#0058A3;height:14px;"></div>
+                  <div class="bar-target-line" style="left:40%;"></div>
+                </div>
+                <div class="bar-val">68%</div>
+                <div class="bar-delta up">+3%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-name" style="width:100px;">HDFC FlexiPay</div>
+                <div class="bar-track" style="height:14px;position:relative;">
+                  <div class="bar-fill" style="width:54%;background:#2272C3;height:14px;"></div>
+                  <div class="bar-target-line" style="left:40%;"></div>
+                </div>
+                <div class="bar-val">54%</div>
+                <div class="bar-delta up">+7%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-name" style="width:100px;">IDFC First</div>
+                <div class="bar-track" style="height:14px;position:relative;">
+                  <div class="bar-fill" style="width:41%;background:#85B7EB;height:14px;"></div>
+                  <div class="bar-target-line" style="left:40%;"></div>
+                </div>
+                <div class="bar-val">41%</div>
+                <div class="bar-delta nu">0%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-name" style="width:100px;">LazyPay</div>
+                <div class="bar-track" style="height:14px;position:relative;">
+                  <div class="bar-fill" style="width:28%;background:#F59E0B;height:14px;"></div>
+                  <div class="bar-target-line" style="left:40%;"></div>
+                </div>
+                <div class="bar-val">28%</div>
+                <div class="bar-delta dn">−2%</div>
+              </div>
+            </div>
+            <div class="insight insight-blue" style="font-size:10px;">
+              <span style="font-family:var(--mono);font-weight:600;">▏Target line</span> at 40% shown on each bar. HDFC FlexiPay fastest riser (+7% WoW). LazyPay dropping — review offer terms.
+            </div>
+
+            <div class="div-label">By category · Attach rate vs. ticket size</div>
+            <table class="itable">
+              <thead><tr><th>Category</th><th>Basket (₹ avg)</th><th>BNPL attach</th><th>Trend</th></tr></thead>
+              <tbody>
+                <tr><td>Kitchen systems</td><td>₹48,200</td><td>62%</td><td class="up">↑+8%</td></tr>
+                <tr><td>Wardrobes</td><td>₹32,400</td><td>55%</td><td class="up">↑+4%</td></tr>
+                <tr class="hl"><td>Sofas</td><td>₹28,900</td><td>31%</td><td class="dn">↓−3%</td></tr>
+                <tr class="hl"><td>Beds</td><td>₹22,100</td><td>27%</td><td class="dn">↓−5%</td></tr>
+                <tr><td>Storage</td><td>₹11,200</td><td>18%</td><td class="nu">0%</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- A/B Test -->
+          <div>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Live A/B Test: EMI Display Format</div>
+                <div class="card-sub">2,100 SESSIONS · AUTO-OPTIMISE PENDING APPROVAL</div>
+              </div>
+              <div class="ab-cols">
+                <div class="ab-card">
+                  <div class="ab-label">Variant A · Control</div>
+                  <div class="ab-rate">38%</div>
+                  <div class="ab-desc">Primary price shown as full lump sum:<br><strong style="font-family:var(--mono);">₹49,999</strong><br>EMI in small footnote text</div>
+                </div>
+                <div class="ab-card winner">
+                  <div class="ab-winner-tag">WINNER</div>
+                  <div class="ab-label">Variant B · Test</div>
+                  <div class="ab-rate" style="color:var(--green);">50%</div>
+                  <div class="ab-desc">Monthly EMI as primary price:<br><strong style="font-family:var(--mono);color:var(--green);">₹2,083/month · 24 mo</strong><br>Full price as secondary</div>
+                  <div class="ab-lift">+12% CTR · +₹8.4L projected GMV</div>
+                </div>
+              </div>
+              <div class="insight insight-green">
+                <strong>Recommendation:</strong> Auto-deploy Variant B to all IKEA India POS screens and product pages. Reduces 'pain of paying' (Prelec & Loewenstein) — spreading payment reduces purchase hesitation by 35–45% for tickets above ₹10K. <br><strong>Xiaomi India precedent:</strong> Identical UX shift drove 41% volume growth in ₹15K–40K segment within 18 months.
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="trigger-action" style="--trigger-color:var(--green);flex:1;justify-content:center;" onclick="sendPrompt('Auto-deploy BNPL Variant B (EMI as primary price display) across all IKEA India stores, website and app checkout. What are the risks, rollout sequence, and partner notification steps?')">Deploy Variant B ↗</button>
+                <button class="trigger-action" style="--trigger-color:var(--blue);flex:1;justify-content:center;" onclick="sendPrompt('BNPL LazyPay acceptance is dropping at IKEA Hyderabad (-2% WoW). What offer adjustments or partner renegotiation should we pursue?')">Fix LazyPay ↗</button>
+              </div>
+            </div>
+
+            <div class="card mt">
+              <div class="card-head"><div class="card-title">Hourly BNPL Attachment</div><div class="card-sub">TODAY</div></div>
+              <div class="chart-box" style="height:130px;"><canvas id="bnplChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-bnpl -->
+
+
+      <!-- ══════════ MODULE 3: DIFM ══════════ -->
+      <div class="panel" id="panel-difm">
+        <div class="ph">
+          <div class="ph-left">
+            <div class="ph-eyebrow">Module 03 · IKEA Ghar Booking Data at Checkout</div>
+            <div class="ph-title">DIFM Attach Rate<br>by Category</div>
+            <div class="ph-desc">Identifies low-attach categories → triggers staff training intervention. Target: 40% attach across all furniture categories. IKEA Ghar bookable at POS, during checkout, and via app — single SKU, no third-party friction.</div>
+          </div>
+          <div class="ph-right">
+            <span class="status s-amber">⚑ 2 BELOW TARGET</span>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-tile" style="--tile-color:#2272C3;">
+            <div class="kpi-tile-label">Overall Attach Rate</div>
+            <div class="kpi-tile-val">34%</div>
+            <div class="kpi-tile-meta dn">Target: 40% · −6 pts</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Top Category</div>
+            <div class="kpi-tile-val">52%</div>
+            <div class="kpi-tile-meta up">Kitchen · ↑ above target</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#C0392B;">
+            <div class="kpi-tile-label">Lowest Category</div>
+            <div class="kpi-tile-val">19%</div>
+            <div class="kpi-tile-meta dn">Beds · −21 pts below target</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Avg Service Ticket</div>
+            <div class="kpi-tile-val">₹900</div>
+            <div class="kpi-tile-meta nu">Incr. revenue per booking</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#B45309;">
+            <div class="kpi-tile-label">Est. Missed Revenue</div>
+            <div class="kpi-tile-val">₹4.2L</div>
+            <div class="kpi-tile-meta dn">Today · from low-attach cats.</div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">Attach Rate by Category</div>
+              <div class="card-sub">DASHED LINE = 40% TARGET · RED = TRAINING TRIGGER</div>
+            </div>
+            <div class="difm-wrap" id="difmBars"></div>
+            <div class="insight insight-amber">
+              <strong>Training trigger active:</strong> Sofas (22%) and Beds (19%) are 18 pts below benchmark. 3 floor associates in Zone D have not completed IKEA Ghar upsell module. Floor manager check-in required within 30 minutes.
+            </div>
+            <div style="margin-top:12px;">
+              <button class="trigger-action" style="--trigger-color:var(--amber);" onclick="sendPrompt('DIFM IKEA Ghar attach is critically low for Sofas (22%) and Beds (19%) at IKEA Hyderabad — 18 pts below benchmark. Write a specific floor manager briefing and co-worker upsell script for these two categories.')">Trigger training alert ↗</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">IKEA Ghar Pricing Matrix</div><div class="card-sub">5-BAND · SINGLE SKU AT POS</div></div>
+              <table class="itable">
+                <thead><tr><th>Basket</th><th>Basic</th><th>Medium</th><th>Premium</th></tr></thead>
+                <tbody>
+                  <tr><td>< ₹5K</td><td>₹299</td><td>₹499</td><td>₹799</td></tr>
+                  <tr><td>₹5K–15K</td><td>₹499</td><td>₹799</td><td>₹1,299</td></tr>
+                  <tr><td>₹15K–30K</td><td>₹899</td><td>₹1,299</td><td>₹1,799</td></tr>
+                  <tr><td>₹30K–50K</td><td>₹1,299</td><td>₹1,799</td><td>₹2,499</td></tr>
+                  <tr class="hl"><td>> ₹50K</td><td>₹1,799</td><td>₹2,499</td><td>₹3,499</td></tr>
+                </tbody>
+              </table>
+              <div class="insight insight-blue" style="margin-top:12px;">
+                <strong>Basic:</strong> Assembly only · <strong>Medium:</strong> + Room placement · <strong>Premium:</strong> + Design consult + debris removal. Premium includes branded IKEA debris-removal bag (Instagrammable artifact).
+              </div>
+            </div>
+
+            <div class="card mt">
+              <div class="card-head"><div class="card-title">Booking Trend · Today</div><div class="card-sub">HOURLY GHAR BOOKINGS</div></div>
+              <div class="chart-box" style="height:120px;"><canvas id="difmChart"></canvas></div>
+              <div class="div-label">Revenue model</div>
+              <div class="mini-stats">
+                <div class="mini-stat"><div class="ms-val">₹74–100Cr</div><div class="ms-lbl">Incr. svc revenue (Yr 2)</div></div>
+                <div class="mini-stat"><div class="ms-val">58%</div><div class="ms-lbl">Contribution margin</div></div>
+                <div class="mini-stat"><div class="ms-val">34%</div><div class="ms-lbl">Urban Ladder benchmark</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-difm -->
+
+
+      <!-- ══════════ MODULE 4: DWELL HEATMAP ══════════ -->
+      <div class="panel" id="panel-dwell">
+        <div class="ph">
+          <div class="ph-left">
+            <div class="ph-eyebrow">Module 04 · In-Store Bluetooth Beacon Data</div>
+            <div class="ph-title">Room Set Dwell-Time<br>Heatmap</div>
+            <div class="ph-desc">Shows which room sets generate longest dwell time → informs floor redesign decisions. IKEA SE Asia data: room-set immersion drives 3× higher purchase probability versus individual product browsing. Target: 65% floor as room sets.</div>
+          </div>
+          <div class="ph-right">
+            <span class="status s-blue">FLOOR INSIGHT READY</span>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-tile" style="--tile-color:#0058A3;">
+            <div class="kpi-tile-label">Top Zone Dwell</div>
+            <div class="kpi-tile-val">11.2<span style="font-size:14px;font-weight:400;"> min</span></div>
+            <div class="kpi-tile-meta nu">Indian Kitchen Set A</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#0058A3;">
+            <div class="kpi-tile-label">Avg Room-Set Dwell</div>
+            <div class="kpi-tile-val">7.4<span style="font-size:14px;font-weight:400;"> min</span></div>
+            <div class="kpi-tile-meta up">↑ +1.2 min vs. last week</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#C0392B;">
+            <div class="kpi-tile-label">Lowest Zone</div>
+            <div class="kpi-tile-val">1.3<span style="font-size:14px;font-weight:400;"> min</span></div>
+            <div class="kpi-tile-meta dn">Frames · consider relocation</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#B45309;">
+            <div class="kpi-tile-label">Food Court Dwell</div>
+            <div class="kpi-tile-val">8.9<span style="font-size:14px;font-weight:400;"> min</span></div>
+            <div class="kpi-tile-meta dn">Cannibalising furn. time</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Current Room-Set %</div>
+            <div class="kpi-tile-val">40%</div>
+            <div class="kpi-tile-meta dn">Target: 65% of floor</div>
+          </div>
+        </div>
+
+        <div class="g32">
+          <!-- Heatmap -->
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">Store Floor Dwell Heatmap</div>
+              <div class="card-sub">AVG MINUTES PER ZONE · HOVER FOR DETAIL</div>
+            </div>
+            <div class="hmap" id="heatmapGrid"></div>
+            <div class="hmap-legend">
+              <span style="font-family:var(--mono);font-size:9px;color:var(--ink3);">Low dwell</span>
+              <div class="hmap-swatch" style="background:#E6F1FB;"></div>
+              <div class="hmap-swatch" style="background:#85B7EB;"></div>
+              <div class="hmap-swatch" style="background:#378ADD;"></div>
+              <div class="hmap-swatch" style="background:#185FA5;"></div>
+              <div class="hmap-swatch" style="background:#0C447C;"></div>
+              <span style="font-family:var(--mono);font-size:9px;color:var(--ink3);">High dwell</span>
+            </div>
+            <div id="dwell-tooltip" style="display:none;margin-top:10px;padding:8px 12px;background:var(--navy);color:#fff;border-radius:var(--r-sm);font-size:11px;font-family:var(--mono);"></div>
+          </div>
+
+          <!-- Ranked list + insight -->
+          <div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Zones by Dwell (Ranked)</div><div class="card-sub">ALL 20 ZONES · PURCHASE LIKELIHOOD INDEX</div></div>
+              <div id="dwellRanked"></div>
+            </div>
+            <div class="card mt">
+              <div class="card-head"><div class="card-title">Floor Redesign Signal</div></div>
+              <div class="insight insight-blue" style="margin-bottom:10px;">
+                <strong>Top 3 highest-dwell zones</strong> (Kitchen 11.2m, Bedroom 8.8m, Living Room 9.4m) correlate to 3× purchase probability. Current floor allocation: 40% room sets. Target: 65%.
+              </div>
+              <div class="insight insight-amber" style="margin-bottom:10px;">
+                <strong>Food Court anomaly:</strong> 8.9 min avg dwell — 2nd-highest on the floor — is cannibalising furniture discovery time. Exit-only model recommended: gate access via IKEA Family card after 1 furniture scan.
+              </div>
+              <div class="insight insight-red">
+                <strong>Frames, Plants, Storage Acc</strong> (1.3–1.8 min) are prime candidates for floor-space reallocation to high-dwell Indian room-set archetypes (puja room, multi-gen storage, 2BHK).
+              </div>
+              <button class="trigger-action" style="--trigger-color:var(--blue);margin-top:12px;width:100%;justify-content:center;" onclick="sendPrompt('Based on IKEA Hyderabad dwell data (Indian Kitchen 11.2 min, Food Court 8.9 min, Frames 1.3 min), recommend a specific floor space reallocation to shift from 40% to 65% room-set coverage. Which zones should expand, which should move?')">Get floor redesign plan ↗</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-dwell -->
+
+
+      <!-- ══════════ MODULE 5: LOYALTY ══════════ -->
+      <div class="panel" id="panel-loyalty">
+        <div class="ph">
+          <div class="ph-left">
+            <div class="ph-eyebrow">Module 05 · IKEA Family CRM Data</div>
+            <div class="ph-title">Loyalty Tier<br>Migration Velocity</div>
+            <div class="ph-desc">Predicts which members are 1–2 purchases from tier upgrade → triggers personalised nudge campaign. IKEA Family 2.0: shifted from transactional discounts to room-completion loyalty architecture (4 tiers: Base → Silver → Gold → Platinum).</div>
+          </div>
+          <div class="ph-right">
+            <span class="status s-green">✓ 312 NUDGES SENT</span>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-tile" style="--tile-color:#2272C3;">
+            <div class="kpi-tile-label">Total Members</div>
+            <div class="kpi-tile-val">1.84L</div>
+            <div class="kpi-tile-meta up">↑ +12% YoY · Hyd store</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Nudges Sent Today</div>
+            <div class="kpi-tile-val">312</div>
+            <div class="kpi-tile-meta nu">Silver → Gold · 14:00 IST</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Predicted Upgrades</div>
+            <div class="kpi-tile-val">107</div>
+            <div class="kpi-tile-meta up">34% conv. rate predicted</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Incr. Basket Expected</div>
+            <div class="kpi-tile-val">₹4.2L</div>
+            <div class="kpi-tile-meta up">From today's nudge batch</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#B45309;">
+            <div class="kpi-tile-label">Near-Upgrade (2 purch.)</div>
+            <div class="kpi-tile-val">891</div>
+            <div class="kpi-tile-meta nu">Silver → Gold · queued</div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <!-- Funnel -->
+          <div class="card">
+            <div class="card-head"><div class="card-title">IKEA Family 2.0 Tier Funnel</div><div class="card-sub">HYDERABAD STORE · LIVE MEMBER COUNT</div></div>
+            <div id="loyaltyFunnel"></div>
+
+            <div class="div-label">Tier benefit architecture</div>
+            <table class="itable">
+              <thead><tr><th>Tier</th><th>Trigger (Cumul.)</th><th>Key Benefit</th></tr></thead>
+              <tbody>
+                <tr><td><span style="font-family:var(--mono);font-size:10px;background:var(--paper2);padding:2px 7px;border-radius:3px;">BASE</span></td><td>Any purchase</td><td>5% birthday discount · hot drink</td></tr>
+                <tr><td><span style="font-family:var(--mono);font-size:10px;background:#D6E8F8;color:#0058A3;padding:2px 7px;border-radius:3px;">SILVER</span></td><td>₹25K+</td><td>Free Ghar Basic assembly (1×) + room tracker</td></tr>
+                <tr><td><span style="font-family:var(--mono);font-size:10px;background:#2272C3;color:#fff;padding:2px 7px;border-radius:3px;">GOLD</span></td><td>₹75K+</td><td>Free 2hr design consult · 1yr insurance</td></tr>
+                <tr class="hl"><td><span style="font-family:var(--mono);font-size:10px;background:var(--navy);color:#fff;padding:2px 7px;border-radius:3px;">PLATINUM</span></td><td>₹1.5L+</td><td>Annual styling · 3yr warranty · priority delivery</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Active Nudge Campaign</div><div class="card-sub">SILVER → GOLD · SENT 14:00 IST</div></div>
+              <div class="nudge-card">
+                <div class="nudge-label">Today's nudge · Silver tier · 312 members</div>
+                <div class="nudge-stat">34% predicted upgrade rate</div>
+                <div class="nudge-desc">Members who are exactly 1 purchase away from ₹75K Gold threshold. Personalised push sent via IKEA app at 14:00.</div>
+                <div class="nudge-row">
+                  <div class="nudge-metric"><div class="nudge-metric-val">312</div><div class="nudge-metric-lbl">Nudged</div></div>
+                  <div style="width:1px;height:30px;background:rgba(255,255,255,0.15);"></div>
+                  <div class="nudge-metric"><div class="nudge-metric-val">107</div><div class="nudge-metric-lbl">Predicted upgrades</div></div>
+                  <div style="width:1px;height:30px;background:rgba(255,255,255,0.15);"></div>
+                  <div class="nudge-metric"><div class="nudge-metric-val">₹4.2L</div><div class="nudge-metric-lbl">Incr. basket</div></div>
+                  <div style="width:1px;height:30px;background:rgba(255,255,255,0.15);"></div>
+                  <div class="nudge-metric"><div class="nudge-metric-val">891</div><div class="nudge-metric-lbl">Next wave queued</div></div>
+                </div>
+              </div>
+              <div class="div-label">Behavioral levers active</div>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <div class="alert-row ar-blue"><div class="alert-icon" style="background:#BFDBFE;color:#1E40AF;font-size:9px;">C</div><div class="alert-body"><div class="alert-title" style="color:#1E40AF;font-size:11px;">Completion psychology</div><div class="alert-msg">"Your Living Room is 60% complete" — endowment effect driving missing-item urgency</div></div></div>
+                <div class="alert-row ar-blue"><div class="alert-icon" style="background:#BFDBFE;color:#1E40AF;font-size:9px;">S</div><div class="alert-body"><div class="alert-title" style="color:#1E40AF;font-size:11px;">Social proof</div><div class="alert-msg">"3,241 families in Hyderabad completed their bedroom this month"</div></div></div>
+                <div class="alert-row ar-amber"><div class="alert-icon" style="background:#FDE68A;color:#92400E;font-size:9px;">L</div><div class="alert-body"><div class="alert-title" style="color:#92400E;font-size:11px;">Loss aversion</div><div class="alert-msg">Tier expiry warning: "Don't lose your Silver status — 2 items from Gold"</div></div></div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="trigger-action" style="--trigger-color:var(--blue);flex:1;justify-content:center;" onclick="sendPrompt('Draft the personalised push notification for the 312 IKEA Family Silver members at Hyderabad who are exactly 1 purchase from Gold tier. Include the specific Gold benefit they unlock, loss aversion framing, and a CTA.')">Draft nudge copy ↗</button>
+                <button class="trigger-action" style="--trigger-color:#6D28D9;flex:1;justify-content:center;" onclick="sendPrompt('The next wave of 891 IKEA Family Silver members are 2 purchases from Gold tier at IKEA Hyderabad. Design a 2-step drip nudge campaign for them — message 1 and message 2 — using completion psychology and social proof.')">Design next wave ↗</button>
+              </div>
+            </div>
+
+            <div class="card mt">
+              <div class="card-head"><div class="card-title">Upgrade Rate by Nudge Type</div><div class="card-sub">HISTORICAL · LAST 30D</div></div>
+              <div class="chart-box" style="height:110px;"><canvas id="loyaltyChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-loyalty -->
+
+
+      <!-- ══════════ MODULE 6: B2B ══════════ -->
+      <div class="panel" id="panel-b2b">
+        <div class="ph">
+          <div class="ph-left">
+            <div class="ph-eyebrow">Module 06 · Account Manager CRM Inputs</div>
+            <div class="ph-title">B2B Lead Pipeline<br>Score</div>
+            <div class="ph-desc">Scores B2B prospects by deal size likelihood → prioritises follow-up queue. B2B = 19% of revenue growing 20% YoY, already outperforming global IKEA average (12–15%). B2B delivers 3.5–4× higher AOV, lower acquisition cost, near-zero assembly friction.</div>
+          </div>
+          <div class="ph-right">
+            <span class="status s-green">✓ ₹1.99 Cr PIPELINE</span>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-tile" style="--tile-color:#6D28D9;">
+            <div class="kpi-tile-label">Active Pipeline</div>
+            <div class="kpi-tile-val">₹1.99Cr</div>
+            <div class="kpi-tile-meta up">↑ +23% vs. last month</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#1A7F4B;">
+            <div class="kpi-tile-label">Closed This Week</div>
+            <div class="kpi-tile-val">₹38L</div>
+            <div class="kpi-tile-meta up">4 deals · avg ₹9.5L</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#2272C3;">
+            <div class="kpi-tile-label">Leads Today</div>
+            <div class="kpi-tile-val">7</div>
+            <div class="kpi-tile-meta up">↑ +3 vs. daily avg</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#C0392B;">
+            <div class="kpi-tile-label">Overdue Follow-ups</div>
+            <div class="kpi-tile-val">3</div>
+            <div class="kpi-tile-meta dn">Action needed today</div>
+          </div>
+          <div class="kpi-tile" style="--tile-color:#6D28D9;">
+            <div class="kpi-tile-label">Avg Deal Size</div>
+            <div class="kpi-tile-val">₹9.4L</div>
+            <div class="kpi-tile-meta nu">3.8× B2C AOV</div>
+          </div>
+        </div>
+
+        <div class="g23">
+          <!-- Pipeline -->
+          <div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Pipeline by Stage</div><div class="card-sub">ML DEAL LIKELIHOOD SCORE · REAL-TIME CRM</div></div>
+              <div id="b2bPipeline"></div>
+            </div>
+
+            <div class="card mt">
+              <div class="card-head"><div class="card-title">Priority Lead Queue</div><div class="card-sub">SORTED BY ML SCORE × DEAL SIZE</div></div>
+              <table class="itable">
+                <thead><tr><th>Lead</th><th>Type</th><th>Value</th><th>Score</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr class="hl"><td>Prestige Co-working, Kondapur</td><td style="font-size:10px;">Office-in-a-Box</td><td>₹18L</td><td class="up">91/100</td><td style="font-family:var(--mono);font-size:9px;color:var(--red);">OVERDUE 2D</td></tr>
+                  <tr><td>Genpact Hyderabad</td><td style="font-size:10px;">Office 50-seat</td><td>₹42L</td><td class="up">84/100</td><td style="font-family:var(--mono);font-size:9px;color:var(--amber);">Proposal due</td></tr>
+                  <tr><td>Lemon Tree Hotels</td><td style="font-size:10px;">Hospitality</td><td>₹28L</td><td>76/100</td><td style="font-family:var(--mono);font-size:9px;color:var(--blue);">Site visit</td></tr>
+                  <tr><td>Hyderabad IB School</td><td style="font-size:10px;">Education</td><td>₹14L</td><td>71/100</td><td style="font-family:var(--mono);font-size:9px;color:var(--blue);">Proposal sent</td></tr>
+                  <tr><td>OYO Rooms HQ</td><td style="font-size:10px;">Hospitality bulk</td><td>₹38L</td><td>68/100</td><td style="font-family:var(--mono);font-size:9px;color:var(--ink3);">Initial inquiry</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Scoring + actions -->
+          <div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Deal Score Model</div><div class="card-sub">ML-RANKED · 4 SIGNALS</div></div>
+              <div class="div-label">Score factors</div>
+              <div class="bar-row"><div class="bar-name" style="width:120px;">Deal size (₹)</div><div class="bar-track"><div class="bar-fill" style="width:85%;background:#6D28D9;"></div></div><div class="bar-val">85%</div></div>
+              <div class="bar-row"><div class="bar-name" style="width:120px;">Engagement freq.</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:#6D28D9;"></div></div><div class="bar-val">72%</div></div>
+              <div class="bar-row"><div class="bar-name" style="width:120px;">Site visit done</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:#85B7EB;"></div></div><div class="bar-val">60%</div></div>
+              <div class="bar-row"><div class="bar-name" style="width:120px;">Days since contact</div><div class="bar-track"><div class="bar-fill" style="width:40%;background:#EF4444;"></div></div><div class="bar-val" style="color:var(--red);">40%</div></div>
+              <div class="insight insight-red" style="margin-top:10px;">
+                <strong>Prestige Co-working:</strong> Score 91 but follow-up overdue 2 days — urgency penalty dragging days-since-contact signal. Draft follow-up immediately to preserve score.
+              </div>
+              <div class="div-label">Quick actions</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="trigger-action" style="--trigger-color:var(--red);justify-content:center;" onclick="sendPrompt('Draft a follow-up email for the Prestige Co-working B2B lead at IKEA Hyderabad for an Office-in-a-Box deal worth ₹18 lakhs. The follow-up is 2 days overdue. ML score is 91/100. Be warm but create urgency around their workspace fit-out timeline.')">Draft Prestige follow-up ↗</button>
+                <button class="trigger-action" style="--trigger-color:#6D28D9;justify-content:center;" onclick="sendPrompt('Create an Office-in-a-Box pitch deck outline for Genpact Hyderabad (50-seat office, ₹42L deal). Include cost-per-seat comparison, delivery timeline, IKEA Ghar installation bundle, and GST invoicing advantage.')">Genpact pitch deck ↗</button>
+                <button class="trigger-action" style="--trigger-color:var(--amber);justify-content:center;" onclick="sendPrompt('Rank all B2B leads at IKEA Hyderabad by expected close this week. For each lead, give one specific action the account manager should take today.')">Prioritise full queue ↗</button>
+              </div>
+            </div>
+
+            <div class="card mt">
+              <div class="card-head"><div class="card-title">Pipeline Value Trend</div><div class="card-sub">LAST 6 WEEKS</div></div>
+              <div class="chart-box" style="height:110px;"><canvas id="b2bChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-b2b -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════════════════
+// STORE DATA
+// ══════════════════════════════════════════════════════
+const STORES = {
+  hyd: { name:'Hyderabad · Blue Box', score:72, delta:'+4', pos:true, foot:'3,842', scan:'38%', food:'31%', bnpl:'29%', difm:'34%', leads:7, pipeline:'₹1.99Cr' },
+  mum: { name:'Mumbai, Navi · Blue Box', score:81, delta:'+7', pos:true, foot:'5,120', scan:'47%', food:'19%', bnpl:'33%', difm:'41%', leads:11, pipeline:'₹2.84Cr' },
+  blr: { name:'Bengaluru · Blue Box', score:65, delta:'−2', pos:false, foot:'2,980', scan:'31%', food:'28%', bnpl:'22%', difm:'28%', leads:4, pipeline:'₹1.12Cr' },
+  del: { name:'Delhi, Dwarka · City', score:58, delta:'+1', pos:true, foot:'1,840', scan:'28%', food:'22%', bnpl:'18%', difm:'22%', leads:3, pipeline:'₹0.74Cr' },
+};
+let STORE = STORES.hyd;
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+// STORE SWITCH
+// ══════════════════════════════════════════════════════
+function switchStore() {
+  const key = document.getElementById('storeSelect').value;
+  STORE = STORES[key];
+  const s = STORE;
+  document.getElementById('sh-score').textContent = s.score;
+  document.getElementById('sh-fill').style.width = s.score + '%';
+  document.getElementById('sh-fill').style.background = s.score >= 75 ? '#1A7F4B' : s.score >= 60 ? '#2272C3' : '#C0392B';
+  document.getElementById('sh-delta').textContent = (s.pos?'↑':'↓') + ' ' + s.delta + ' pts vs. yesterday';
+  document.getElementById('sh-delta').className = 'sh-delta ' + (s.pos ? 'up' : 'dn');
+  document.getElementById('sh-name').textContent = s.name;
+  document.getElementById('ff-kpi1').textContent = s.foot;
+  document.getElementById('ff-kpi2').textContent = s.scan;
+  document.getElementById('ff-kpi3').textContent = s.food;
+}
+
+function refreshDash() {
+  const s = STORE;
+  const j = (v,r) => Math.max(0, v + Math.round((Math.random()-0.5)*r));
+  const scoreJ = j(s.score, 4);
+  document.getElementById('sh-score').textContent = scoreJ;
+  document.getElementById('sh-fill').style.width = scoreJ + '%';
+  const base = parseInt(s.foot.replace(',',''));
+  document.getElementById('ff-kpi1').textContent = j(base,180).toLocaleString('en-IN');
+  updateClock();
+}
+
+// Clock
+function updateClock() {
+  const n = new Date();
+  const pad = x => String(x).padStart(2,'0');
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('liveTime').textContent = `LIVE · ${days[n.getDay()]} ${pad(n.getDate())} ${months[n.getMonth()]} ${n.getFullYear()} · ${pad(n.getHours())}:${pad(n.getMinutes())} IST`;
+}
+updateClock(); setInterval(updateClock, 60000);
+
+// ══════════════════════════════════════════════════════
+// FOOTFALL HOURLY TABLE
+// ══════════════════════════════════════════════════════
+const ffData = [
+  {h:'10:00', foot:420, scan:42, food:21},
+  {h:'11:00', foot:610, scan:33, food:31},
+  {h:'12:00', foot:890, scan:45, food:22},
+  {h:'13:00', foot:760, scan:51, food:18},
+  {h:'14:00', foot:540, scan:34, food:29},
+  {h:'15:00', foot:620, scan:38, food:24},
+];
+const tbody = document.getElementById('ff-table');
+ffData.forEach(r => {
+  const alert = r.food > 25;
+  const tr = document.createElement('tr');
+  if (alert) tr.style.background = 'rgba(192,57,43,0.05)';
+  tr.innerHTML = `<td style="font-family:var(--mono);font-size:11px;">${r.h}</td><td>${r.foot.toLocaleString('en-IN')}</td><td style="${r.scan<40?'color:var(--red);font-weight:600;':''}">${r.scan}%</td><td style="${alert?'color:var(--red);font-weight:600;':''}">${r.food}%${alert?' ⚠':''}</td><td style="font-family:var(--mono);font-size:9px;${alert?'color:var(--red);':'color:var(--green);'}">${alert?'ALERT':'OK'}</td>`;
+  tbody.appendChild(tr);
+});
+
+// ══════════════════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════════════════
+const monoFont = "'IBM Plex Mono', monospace";
+const gridC = 'rgba(0,0,0,0.06)';
+const tickC = '#8A8A8A';
+const hours = ['10am','11am','12pm','1pm','2pm','3pm'];
+
+// Footfall main chart
+new Chart(document.getElementById('ffChart'), {
+  type:'bar',
+  data:{
+    labels:hours,
+    datasets:[
+      {label:'Footfall',data:[420,610,890,760,540,620],backgroundColor:'rgba(130,183,235,0.75)',borderRadius:4,yAxisID:'y'},
+      {label:'Scan rate %',data:[42,33,45,51,34,38],type:'line',borderColor:'#0058A3',backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#0058A3',tension:0.35,yAxisID:'y1'},
+      {label:'Food-only %',data:[21,31,22,18,29,24],type:'line',borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:4,pointBackgroundColor:'#C0392B',tension:0.35,yAxisID:'y1'},
+      {label:'Threshold',data:[25,25,25,25,25,25],type:'line',borderColor:'rgba(192,57,43,0.3)',backgroundColor:'transparent',borderWidth:1,borderDash:[2,2],pointRadius:0,yAxisID:'y1'}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'#042C53',titleColor:'rgba(255,255,255,0.7)',bodyColor:'#fff',padding:10,cornerRadius:8,titleFont:{family:monoFont,size:10},bodyFont:{family:monoFont,size:11}}},scales:{y:{position:'left',grid:{color:gridC},ticks:{color:tickC,font:{size:10,family:monoFont}},border:{display:false}},y1:{position:'right',min:0,max:70,grid:{display:false},ticks:{color:tickC,font:{size:10,family:monoFont},callback:v=>v+'%'},border:{display:false}},x:{grid:{display:false},ticks:{color:tickC,font:{size:10,family:monoFont}},border:{display:false}}}}
+});
+
+// BNPL hourly chart
+new Chart(document.getElementById('bnplChart'), {
+  type:'line',
+  data:{labels:hours,datasets:[
+    {label:'Bajaj',data:[62,65,71,68,66,68],borderColor:'#0058A3',backgroundColor:'rgba(0,88,163,0.08)',borderWidth:2,pointRadius:3,fill:false,tension:0.4},
+    {label:'HDFC',data:[48,50,56,55,52,54],borderColor:'#2272C3',backgroundColor:'transparent',borderWidth:2,pointRadius:3,fill:false,tension:0.4},
+    {label:'IDFC',data:[38,40,43,42,41,41],borderColor:'#85B7EB',backgroundColor:'transparent',borderWidth:1.5,pointRadius:2,fill:false,tension:0.4},
+    {label:'LazyPay',data:[31,30,29,28,28,28],borderColor:'#F59E0B',backgroundColor:'transparent',borderWidth:1.5,pointRadius:2,fill:false,borderDash:[4,3],tension:0.4},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9,family:monoFont},color:tickC,boxWidth:8,padding:10}},tooltip:{mode:'index',intersect:false,backgroundColor:'#042C53',titleColor:'rgba(255,255,255,0.7)',bodyColor:'#fff',padding:8,cornerRadius:7,titleFont:{family:monoFont,size:10},bodyFont:{family:monoFont,size:11}}},scales:{y:{min:20,max:80,grid:{color:gridC},ticks:{color:tickC,font:{size:9,family:monoFont},callback:v=>v+'%'},border:{display:false}},x:{grid:{display:false},ticks:{color:tickC,font:{size:9,family:monoFont}},border:{display:false}}}}
+});
+
+// DIFM bars
+const difmCats = [
+  {name:'Kitchen',pct:52,color:'#1A7F4B'},{name:'Wardrobe',pct:48,color:'#2272C3'},
+  {name:'Storage',pct:43,color:'#378ADD'},{name:'Desk',pct:37,color:'#85B7EB'},
+  {name:'Sofas',pct:22,color:'#F59E0B'},{name:'Beds',pct:19,color:'#C0392B'},
+];
+const difmWrap = document.getElementById('difmBars');
+const maxH=90, maxP=60, targetP=40;
+difmCats.forEach(c=>{
+  const col=document.createElement('div'); col.className='difm-col';
+  const bH=Math.round((c.pct/maxP)*maxH);
+  const tH=Math.round((targetP/maxP)*maxH);
+  const isLow=c.pct<targetP;
+  col.innerHTML=`<div class="difm-pct-lbl" style="color:${isLow&&c.pct<30?'var(--red)':'var(--ink3)'};">${c.pct}%</div><div class="difm-bar-area" style="height:${maxH}px;"><div class="difm-bar" style="height:${bH}px;background:${c.color};"></div><div style="position:absolute;bottom:${tH}px;left:0;right:0;border-top:1.5px dashed rgba(0,0,0,0.25);pointer-events:none;"></div></div><div class="difm-lbl">${c.name}</div>`;
+  difmWrap.appendChild(col);
+});
+
+// DIFM hourly chart
+new Chart(document.getElementById('difmChart'), {
+  type:'bar',
+  data:{labels:hours,datasets:[{label:'Ghar bookings',data:[4,7,12,9,6,8],backgroundColor:'rgba(180,83,9,0.65)',borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#042C53',titleColor:'rgba(255,255,255,0.7)',bodyColor:'#fff',padding:8,cornerRadius:7,titleFont:{family:monoFont,size:10},bodyFont:{family:monoFont,size:11}}},scales:{y:{grid:{color:gridC},ticks:{color:tickC,font:{size:9,family:monoFont}},border:{display:false}},x:{grid:{display:false},ticks:{color:tickC,font:{size:9,family:monoFont}},border:{display:false}}}}
+});
+
+// Heatmap
+const zones=[
+  {name:'Indian Kitchen A',dwell:11.2},{name:'Living Room B',dwell:9.4},
+  {name:'Food Court',dwell:8.9},{name:'Bedroom C',dwell:8.8},
+  {name:'Storage D',dwell:7.1},{name:'Kids Room E',dwell:6.3},
+  {name:'Dining F',dwell:5.9},{name:'Puja Room G',dwell:5.5},
+  {name:'Checkout',dwell:4.4},{name:'Bathroom H',dwell:4.2},
+  {name:'Balcony I',dwell:4.0},{name:'Study J',dwell:3.7},
+  {name:'Sofa Dept',dwell:3.2},{name:'Bed Dept',dwell:3.0},
+  {name:'Lighting',dwell:2.8},{name:'Textiles',dwell:2.5},
+  {name:'Kitchen Acc',dwell:2.1},{name:'Plants',dwell:1.8},
+  {name:'Storage Acc',dwell:1.5},{name:'Frames',dwell:1.3},
+];
+const hmC=['#E6F1FB','#85B7EB','#378ADD','#185FA5','#0C447C'];
+const hmT=['#042C53','#042C53','#fff','#fff','#fff'];
+const hgEl=document.getElementById('heatmapGrid');
+const tooltip=document.getElementById('dwell-tooltip');
+zones.forEach(z=>{
+  const idx=Math.min(4,Math.floor((z.dwell/12)*5));
+  const cell=document.createElement('div'); cell.className='hmap-cell';
+  cell.style.background=hmC[idx]; cell.style.color=hmT[idx];
+  cell.innerHTML=`<div class="hmap-val">${z.dwell.toFixed(1)}</div><div class="hmap-name">${z.name}</div>`;
+  cell.addEventListener('mouseenter',()=>{ tooltip.style.display='block'; tooltip.textContent=`${z.name} — ${z.dwell} min avg dwell · Purchase likelihood: ${z.dwell>8?'HIGH':z.dwell>4?'MED':'LOW'}`; });
+  cell.addEventListener('mouseleave',()=>{ tooltip.style.display='none'; });
+  hgEl.appendChild(cell);
+});
+
+// Dwell ranked
+const sortedZ=[...zones].sort((a,b)=>b.dwell-a.dwell);
+const dwRank=document.getElementById('dwellRanked');
+sortedZ.slice(0,10).forEach((z,i)=>{
+  const idx=Math.min(4,Math.floor((z.dwell/12)*5));
+  const row=document.createElement('div'); row.className='bar-row';
+  row.innerHTML=`<div class="bar-name" style="width:116px;font-size:11px;">${z.name}</div><div class="bar-track"><div class="bar-fill" style="width:${(z.dwell/12)*100}%;background:${hmC[idx]};"></div></div><div class="bar-val" style="font-size:11px;">${z.dwell}m</div>`;
+  dwRank.appendChild(row);
+});
+
+// Loyalty funnel
+const loyaltyData=[
+  {tier:'Base',label:'',count:'1,84,203',pct:100,color:'#8A8A8A',text:'184,203 members'},
+  {tier:'Silver',label:'Room Starter',count:'96,000',pct:52,color:'#378ADD',text:'Room Starter · ₹25K+'},
+  {tier:'Gold',label:'Room Builder',count:'38,000',pct:21,color:'#0058A3',text:'Room Builder · ₹75K+'},
+  {tier:'Platinum',label:'Completer',count:'11,000',pct:6,color:'#042C53',text:'Completer · ₹1.5L+'},
+];
+const loyFunnel=document.getElementById('loyaltyFunnel');
+loyaltyData.forEach(d=>{
+  const row=document.createElement('div'); row.className='funnel-row';
+  row.innerHTML=`<div class="funnel-tier">${d.tier}</div><div class="funnel-track"><div class="funnel-fill" style="width:${d.pct}%;background:${d.color};">${d.text}</div></div><div class="funnel-count">${d.count}</div><div class="funnel-pct">${d.pct}%</div>`;
+  loyFunnel.appendChild(row);
+});
+
+// Loyalty nudge chart
+new Chart(document.getElementById('loyaltyChart'),{
+  type:'bar',
+  data:{labels:['Push','Push+Loss','Social Proof','Completion','Reciprocity'],datasets:[{label:'Upgrade conv. %',data:[22,29,26,34,38],backgroundColor:['#85B7EB','#378ADD','#2272C3','#0058A3','#042C53'],borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{backgroundColor:'#042C53',titleColor:'rgba(255,255,255,0.7)',bodyColor:'#fff',padding:8,cornerRadius:7,titleFont:{family:monoFont,size:10},bodyFont:{family:monoFont,size:11}}},scales:{x:{grid:{color:gridC},ticks:{color:tickC,font:{size:9,family:monoFont},callback:v=>v+'%'},border:{display:false}},y:{grid:{display:false},ticks:{color:tickC,font:{size:9,family:monoFont}},border:{display:false}}}}
+});
+
+// B2B pipeline
+const stages=[
+  {name:'Closed / Won',color:'#1A7F4B',count:4,val:'₹38L',bar:100,bg:'rgba(26,127,75,0.25)'},
+  {name:'Proposal Sent',color:'#2272C3',count:6,val:'₹54L',bar:80,bg:'rgba(34,114,195,0.2)'},
+  {name:'Site Visit Booked',color:'#F59E0B',count:9,val:'₹72L',bar:64,bg:'rgba(245,158,11,0.15)'},
+  {name:'Initial Inquiry',color:'#8A8A8A',count:14,val:'₹35L',bar:36,bg:'rgba(138,138,138,0.12)'},
+];
+const pipeEl=document.getElementById('b2bPipeline');
+stages.forEach(s=>{
+  const row=document.createElement('div'); row.className='pipe-row';
+  row.innerHTML=`<div class="pipe-stage-dot" style="background:${s.color};"></div><div class="pipe-stage-name">${s.name}</div><div class="pipe-count-chip">${s.count} deals</div><div class="pipe-value">${s.val}</div><div style="width:70px;"><div class="pipe-mini-bar" style="width:${s.bar}%;background:${s.color};opacity:0.7;"></div></div>`;
+  pipeEl.appendChild(row);
+});
+
+// B2B trend chart
+new Chart(document.getElementById('b2bChart'),{
+  type:'line',
+  data:{labels:['Wk−5','Wk−4','Wk−3','Wk−2','Wk−1','Now'],datasets:[{label:'Pipeline ₹L',data:[122,135,148,163,178,199],borderColor:'#6D28D9',backgroundColor:'rgba(109,40,217,0.08)',borderWidth:2.5,pointRadius:4,fill:true,tension:0.4}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#042C53',titleColor:'rgba(255,255,255,0.7)',bodyColor:'#fff',padding:8,cornerRadius:7,titleFont:{family:monoFont,size:10},bodyFont:{family:monoFont,size:11}}},scales:{y:{grid:{color:gridC},ticks:{color:tickC,font:{size:9,family:monoFont},callback:v=>'₹'+v+'L'},border:{display:false}},x:{grid:{display:false},ticks:{color:tickC,font:{size:9,family:monoFont}},border:{display:false}}}}
+});
+
+// Time filter (visual only)
+function setTimeRange(range, btn) {
+  document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// sendPrompt hook
+function sendPrompt(text) {
+  if (typeof window.sendPrompt === 'function') { window.sendPrompt(text); }
+  else { console.log('[Prompt]', text); alert('Action triggered:\n\n'+text); }
+}
+</script>
+</body>
+</html>
